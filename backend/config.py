@@ -4,11 +4,23 @@ from pathlib import Path
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
+_BACKEND_ENV = Path(__file__).parent / ".env"
+
+
 def _env_path() -> Path:
     data_dir = os.environ.get("GTM_DATA_DIR")
     if data_dir:
         return Path(data_dir) / ".env"
-    return Path(__file__).parent / ".env"
+    return _BACKEND_ENV
+
+
+def _env_files() -> list[str]:
+    """Load backend/.env first, then userData/.env so the latter wins."""
+    paths = [str(_BACKEND_ENV)]
+    data_dir = os.environ.get("GTM_DATA_DIR")
+    if data_dir:
+        paths.append(str(Path(data_dir) / ".env"))
+    return paths
 
 
 class Settings(BaseSettings):
@@ -21,7 +33,7 @@ class Settings(BaseSettings):
     SCAN_MAX_CLIPS_PER_STREAMER: int = 500
 
     model_config = SettingsConfigDict(
-        env_file=str(_env_path()),
+        env_file=_env_files(),
         env_file_encoding="utf-8",
         extra="ignore",
     )
